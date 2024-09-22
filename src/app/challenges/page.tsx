@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Camera, Trash2, Upload, X } from 'lucide-react'
+import { Camera, Trash2, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 const challenges = [
@@ -58,9 +58,9 @@ export default function Challenges() {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
-          aspectRatio: 4/3,
-          width: { ideal: 1280 },
-          height: { ideal: 960 }
+          aspectRatio: 16/9,
+          width: { ideal: 960 },
+          height: { ideal: 1280 }
         } 
       })
       if (videoRef.current) {
@@ -70,7 +70,7 @@ export default function Challenges() {
       console.error("Error accessing the camera", err)
       toast({
         title: "Error accessing the camera",
-        description: "Unable to access camera. Please check your permissions or try uploading a photo instead.",
+        description: "Unable to access camera. Please check your permissions.",
         variant: "destructive",
       })
       setCurrentChallenge(null)
@@ -81,7 +81,6 @@ export default function Challenges() {
     if (videoRef.current && canvasRef.current && currentChallenge) {
       const video = videoRef.current
       const canvas = canvasRef.current
-      const aspectRatio = video.videoWidth / video.videoHeight
       canvas.width = video.videoWidth
       canvas.height = video.videoHeight
       const context = canvas.getContext('2d')
@@ -117,20 +116,6 @@ export default function Challenges() {
     })
   }
 
-  const handleFileUpload = (challenge: string, file: File) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      if (e.target && typeof e.target.result === 'string') {
-        const newPhotos = { ...photos, [challenge]: { id: Date.now().toString(), url: e.target.result } }
-        savePhotos(newPhotos)
-        toast({
-          title: "Photo uploaded",
-          description: "Your photo has been uploaded."
-        })
-      }
-    }
-    reader.readAsDataURL(file)
-  }
 
   if (!username) {
     return <div>Loading...</div>
@@ -140,25 +125,32 @@ export default function Challenges() {
     <div className="min-h-screen bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4">
       <h1 className="text-2xl font-bold mb-6 text-center text-white">Wedding Photo Challenge for {username}</h1>
       {currentChallenge && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-4 rounded-lg w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">{currentChallenge}</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-100 flex items-center justify-center z-50 p-1">
+          <div className="bg-black  rounded-lg w-[100vw] h-[100vh]">
+            <div className="flex justify-between items-center p-2">
+              <h2 className="text-xl font-semibold text-white">{currentChallenge}</h2>
               <Button variant="ghost" size="icon" onClick={stopCamera}>
-                <X className="h-6 w-6" />
+                <X className="h-6 w-6 text-white" />
               </Button>
             </div>
-            <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+            <div className="relative w-full" style={{ paddingBottom: '90vh' }}>
               <video 
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
-                className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                className="absolute inset-0 w-full h-full object-cover rounded-xl"
               />
+              <div className="absolute bottom-10 right-1/2 translate-x-1/2 p-2">
+              <Button
+                onClick={capturePhoto}
+                size="lg"
+                className="rounded-full bg-white text-black hover:bg-gray-200 w-16 h-16 p-0 flex items-center justify-center"
+              >
+                <div className="w-14 h-14 rounded-full border-2 border-black" />
+              </Button>
+              </div>
             </div>
-            <div className="flex justify-center mt-4">
-              <Button onClick={capturePhoto}>Capture</Button>
-            </div>
+
           </div>
         </div>
       )}
@@ -169,7 +161,7 @@ export default function Challenges() {
               <CardTitle className="text-sm">{challenge}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+              <div className="relative w-full" style={{ paddingBottom: '100%' }}>
                 {photos[challenge] ? (
                   <Image 
                     src={photos[challenge].url} 
@@ -190,20 +182,7 @@ export default function Challenges() {
                 <Button size="sm" onClick={() => startCamera(challenge)}>
                   <Camera className="mr-2 h-4 w-4" /> Take
                 </Button>
-                <Button size="sm" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="mr-2 h-4 w-4" /> Upload
-                </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) handleFileUpload(challenge, file)
-                  }}
-                />
-              </div>
+                </div>
               {photos[challenge] && (
                 <Button size="sm" variant="destructive" onClick={() => handlePhotoDelete(challenge)}>
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
