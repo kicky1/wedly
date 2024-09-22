@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Wedly",
@@ -16,7 +17,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body>
-        {children}
+        <Suspense fallback={<>Loading...</>}>
+          {children}
+        </Suspense>
         <Toaster />
       </body>
     </html>
