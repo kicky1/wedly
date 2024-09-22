@@ -1,6 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
 import "@/styles/globals.css";
-
 import { GeistSans } from "geist/font/sans";
 import { type Metadata } from "next";
 import { Suspense } from "react";
@@ -17,8 +16,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable}`}>
       <body>
-        <Suspense fallback={<>Loading...</>}>
-          {children}
+        <Suspense fallback={<div>Loading...</div>}>
+        {children}
         </Suspense>
         <Toaster />
       </body>

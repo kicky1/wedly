@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Camera, Trash2, Upload } from 'lucide-react'
+import { Camera, Trash2, Upload, X } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
 const challenges = [
@@ -54,7 +55,14 @@ export default function Challenges() {
     stopCamera()
     setCurrentChallenge(challenge)
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment',
+          aspectRatio: 4/3,
+          width: { ideal: 1280 },
+          height: { ideal: 960 }
+        } 
+      })
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
@@ -71,10 +79,15 @@ export default function Challenges() {
 
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current && currentChallenge) {
-      const context = canvasRef.current.getContext('2d')
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      const aspectRatio = video.videoWidth / video.videoHeight
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const context = canvas.getContext('2d')
       if (context) {
-        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height)
-        const imageDataUrl = canvasRef.current.toDataURL('image/jpeg')
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
+        const imageDataUrl = canvas.toDataURL('image/jpeg')
         const newPhotos = { ...photos, [currentChallenge]: { id: Date.now().toString(), url: imageDataUrl } }
         savePhotos(newPhotos)
         stopCamera()
@@ -124,41 +137,60 @@ export default function Challenges() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4 sm:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-white">Wedding Photo Challenge for {username}</h1>
+    <div className="min-h-screen bg-gradient-to-r from-pink-300 via-purple-300 to-indigo-400 p-4">
+      <h1 className="text-2xl font-bold mb-6 text-center text-white">Wedding Photo Challenge for {username}</h1>
       {currentChallenge && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4">{currentChallenge}</h2>
-            <video ref={videoRef} autoPlay playsInline className="w-full h-64 object-cover mb-4" />
-            <div className="flex justify-between">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-4 rounded-lg w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">{currentChallenge}</h2>
+              <Button variant="ghost" size="icon" onClick={stopCamera}>
+                <X className="h-6 w-6" />
+              </Button>
+            </div>
+            <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className="absolute inset-0 w-full h-full object-cover rounded-lg"
+              />
+            </div>
+            <div className="flex justify-center mt-4">
               <Button onClick={capturePhoto}>Capture</Button>
-              <Button variant="secondary" onClick={stopCamera}>Cancel</Button>
             </div>
           </div>
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {challenges.map((challenge) => (
           <Card key={challenge} className="bg-white">
             <CardHeader>
-              <CardTitle className="text-sm sm:text-base">{challenge}</CardTitle>
+              <CardTitle className="text-sm">{challenge}</CardTitle>
             </CardHeader>
             <CardContent>
-              {photos[challenge] ? (
-                <img src={photos[challenge].url} alt={challenge} className="w-full h-32 sm:h-48 object-cover rounded" />
-              ) : (
-                <div className="w-full h-32 sm:h-48 bg-gray-200 flex items-center justify-center rounded">
-                  No photo yet
-                </div>
-              )}
+              <div className="relative w-full" style={{ paddingBottom: '75%' }}>
+                {photos[challenge] ? (
+                  <Image 
+                    src={photos[challenge].url} 
+                    alt={challenge} 
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    className="rounded"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gray-200 flex items-center justify-center rounded">
+                    No photo yet
+                  </div>
+                )}
+              </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex flex-wrap justify-between gap-2">
               <div className="flex gap-2">
-                <Button onClick={() => startCamera(challenge)}>
+                <Button size="sm" onClick={() => startCamera(challenge)}>
                   <Camera className="mr-2 h-4 w-4" /> Take
                 </Button>
-                <Button onClick={() => fileInputRef.current?.click()}>
+                <Button size="sm" onClick={() => fileInputRef.current?.click()}>
                   <Upload className="mr-2 h-4 w-4" /> Upload
                 </Button>
                 <input
@@ -173,7 +205,7 @@ export default function Challenges() {
                 />
               </div>
               {photos[challenge] && (
-                <Button variant="destructive" onClick={() => handlePhotoDelete(challenge)}>
+                <Button size="sm" variant="destructive" onClick={() => handlePhotoDelete(challenge)}>
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </Button>
               )}
@@ -181,7 +213,7 @@ export default function Challenges() {
           </Card>
         ))}
       </div>
-      <canvas ref={canvasRef} style={{ display: 'none' }} width={640} height={480} />
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   )
 }
