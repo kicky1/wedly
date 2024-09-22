@@ -5,6 +5,20 @@
 await import("./src/env.js");
 
 /** @type {import("next").NextConfig} */
-const config = {};
+const config = {
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=self',
+          },
+        ],
+      },
+    ];
+  },
+};
 
 export default config;
